@@ -2,6 +2,66 @@
 
 A comprehensive testing framework for robotic systems, providing tools for motor control simulation, sensor emulation, data acquisition, and real-time visualization.
 
+## Visualizations
+
+Every figure below is generated directly from the simulation API by
+[`scripts/make_figures.py`](scripts/make_figures.py) (`.venv/bin/python scripts/make_figures.py`) —
+no hand-drawn data. They exercise the same code paths covered by the test suite.
+
+### Brushed-DC motor plant
+
+![Step response of the RK4 motor plant: second-order velocity rise with the fast electrical current transient (twin axes).](assets/motor_step_response.png)
+
+A 6 V voltage step into the `MotorSimulator`. The winding current spikes on the fast electrical time constant (L/R) while output velocity rises on the slower mechanical pole toward the closed-form steady state — the signature of the coupled second-order electromechanical plant.
+
+![Coulomb + Stribeck + viscous friction torque versus angular velocity, showing static break-away, the Stribeck dip, and the viscous rise.](assets/friction_curve.png)
+
+The drivetrain friction model swept over ±ω: static break-away at `τ_s`, the Stribeck dip decaying toward Coulomb `τ_c`, and the linear viscous rise `b·ω` at speed.
+
+### Cascade servo control
+
+![Closed-loop position step comparing correct back-calculation anti-windup against an integrator-windup case.](assets/cascade_step.png)
+
+A 1 rad position step through the three-loop `CascadeController`. With back-calculation anti-windup the response settles cleanly on target; disabling it (tracking time constant → ∞) lets the integrator wind up and the axis overshoots and oscillates badly.
+
+### System identification
+
+![Grouped bar chart of least-squares-identified motor parameters versus ground truth, with per-parameter percent error near zero.](assets/system_id.png)
+
+A chirp-excitation run fed through least-squares `identify_motor_parameters` recovers all five plant parameters (R, L, Kt, J, b) to ~0.00 % error against the ground-truth values that generated the data.
+
+### Sensor emulation
+
+The bench also models realistic sensor behaviour (quantization, noise, bias, saturation):
+
+![Quadrature encoder demonstration: A/B channel waveforms and decoded position/velocity.](assets/quadrature_encoder_demo.png)
+
+![Force/torque sensor demonstration with noise and bias.](assets/force_torque_sensor_demo.png)
+
+![Joint angle sensor demonstration.](assets/joint_angle_sensor_demo.png)
+
+## Control architecture
+
+The servo loop is a classic three-loop cascade (outer position → middle velocity → inner current → motor plant), each loop a PI block with back-calculation anti-windup and physically-motivated feedforward. This mirrors [`robot_testbench/control/cascade.py`](robot_testbench/control/cascade.py):
+
+```mermaid
+flowchart LR
+    SP["Position<br/>setpoint θ*"] --> POS["Position loop<br/>(P / PI)"]
+    POS -->|velocity cmd| VEL["Velocity loop<br/>(PI)"]
+    VEL -->|torque cmd ÷ Kt| CUR["Current loop<br/>(PI)"]
+    CUR -->|voltage V| PLANT["Motor plant<br/>(RK4 + friction + gearbox)"]
+
+    VFF["Velocity FF<br/>ω*"] -.-> POS
+    AFF["Accel FF<br/>τ = J·a*·N"] -.-> VEL
+    EFF["Back-EMF FF<br/>Ke·ωₘ"] -.-> CUR
+
+    PLANT -->|current i| CUR
+    PLANT -->|velocity ω| VEL
+    PLANT -->|position θ| POS
+```
+
+Solid arrows are the forward command path; dotted arrows are feedforward injections; the bottom arrows are the three feedback measurements (current, velocity, position) closing each loop.
+
 ## Quick Start
 
 ### 1. Installation
