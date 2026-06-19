@@ -135,19 +135,21 @@ class FaultInjector:
     def __init__(self, config: FaultConfig):
         self.config = config
         self._active_faults: Dict[str, float] = {}  # fault_name -> end_time
-        
+        self._sim_time = 0.0  # accumulated simulation time [s] (deterministic)
+
     def step(self, dt: float) -> List[str]:
         """
         Update fault states and inject new faults.
-        
+
         Args:
             dt: Time step in seconds
-            
+
         Returns:
             List of active fault names
         """
-        # Update existing faults
-        current_time = time.time()
+        # Advance deterministic simulation clock (no wall-clock time.time()).
+        self._sim_time += dt
+        current_time = self._sim_time
         self._active_faults = {
             fault: end_time 
             for fault, end_time in self._active_faults.items()

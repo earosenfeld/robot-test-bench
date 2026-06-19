@@ -100,11 +100,10 @@ class ForceTorqueSensor:
         hysteresis = self._calculate_hysteresis(calibrated_torque)
         noise = np.random.normal(0, self.config.noise_std)
         reading = (calibrated_torque + temp_drift + time_drift + hysteresis + noise)
-        reading = self._apply_bandwidth(reading)
+        reading = self._apply_bandwidth(reading, dt)
         if abs(reading) > self.config.overload_limit:
             reading = np.sign(reading) * self.config.overload_limit
         self.last_reading = reading
-        self.last_time = time.time()
         return reading
     def _apply_calibration(self, torque: float) -> float:
         return torque * self.config.sensitivity
@@ -118,8 +117,12 @@ class ForceTorqueSensor:
             return 0.0
         else:
             return np.sign(delta) * self.config.hysteresis
-    def _apply_bandwidth(self, reading: float) -> float:
-        alpha = 1.0 - np.exp(-2 * np.pi * self.config.bandwidth * (time.time() - self.last_time))
+    def _apply_bandwidth(self, reading: float, dt: float) -> float:
+        # Deterministic first-order low-pass: alpha set by the simulation dt,
+        # not wall-clock time, so repeated runs are reproducible.
+        if dt <= 0.0:
+            return reading
+        alpha = 1.0 - np.exp(-2 * np.pi * self.config.bandwidth * dt)
         return alpha * reading + (1 - alpha) * self.last_reading
     def set_temperature(self, temperature: float):
         self.temperature = temperature
