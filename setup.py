@@ -15,7 +15,7 @@ setup(
     description="A comprehensive testing framework for robotic systems",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/earosenfeld/RobotTestBench",
+    url="https://github.com/earosenfeld/robot-test-bench",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
