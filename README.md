@@ -30,6 +30,34 @@ A 1 rad position step through the three-loop `CascadeController`. With back-calc
 
 A chirp-excitation run fed through least-squares `identify_motor_parameters` recovers all five plant parameters (R, L, Kt, J, b) to ~0.00 % error against the ground-truth values that generated the data.
 
+## Flexible-joint resonance & input shaping
+
+A real servo axis is never a single rigid inertia: the rotor and the driven load are coupled through a **compliant transmission** (belt, harmonic drive, long shaft), which turns the plant into a **two-mass resonant system** — the classic source of "singing" axes, limit-cycle chatter, and the hard ceiling on closed-loop bandwidth. [`robot_testbench/resonance.py`](robot_testbench/resonance.py) models that plant and demonstrates **input shaping** as a model-based way to command a move that does not excite the resonance.
+
+With motor angle `θm` and load angle `θl`, shaft stiffness `k` and internal damping `c`:
+
+```
+Jm · θm'' = τ − k(θm − θl) − c(θm' − θl')
+Jl · θl'' =     k(θm − θl) + c(θm' − θl')
+```
+
+The plant has two characteristic frequencies, recovered in closed form by `resonance_modes()`:
+
+| Quantity | Formula | Meaning |
+|---|---|---|
+| Resonance | `ω_res = √(k(Jm+Jl) / (Jm·Jl))` | resonant pole — sharp peak in the **load** FRF `τ→θl` |
+| Anti-resonance | `ω_anti = √(k / Jl)` | zero of the **collocated** (motor-side) FRF `τ→θm`; the load acts as a tuned absorber |
+| Damping ratio | `ζ = c(Jm+Jl) / (2·√(k(Jm+Jl)·Jm·Jl))` | damping of the resonant pair |
+
+**Input shaping** (`apply_input_shaper`) convolves the reference command with a short impulse train timed so the individual residual vibrations cancel at `ω_res` — a zero-phase, model-based notch placed exactly on the resonance:
+
+- **ZV** (Zero-Vibration), two impulses: `A1 = 1/(1+K)` at `t=0`, `A2 = K/(1+K)` at `t = T_d/2`, where `K = exp(−ζπ/√(1−ζ²))`, `T_d = 2π/ω_d`, `ω_d = ω_res·√(1−ζ²)`.
+- **ZVD** (Zero-Vibration-and-Derivative), three impulses at `0, T_d/2, T_d` with weights `[1, 2K, K²]/(1+2K+K²)` — far more robust to a mis-estimated resonance.
+
+![Left: two-mass frequency response showing the resonance peak in the load transfer function and the anti-resonance notch in the collocated motor transfer function. Right: a rest-to-rest load move, unshaped (persistent ringing) versus ZV input-shaped (settles cleanly to the same target), with the residual vibration reduced by ~99 %.](assets/resonance_suppression.png)
+
+**Left:** the dynamic-compliance FRF (normalised by the rigid-body `1/s²` baseline) — the load response (blue) peaks at `ω_res`, while the collocated motor response (green) drops into a deep anti-resonance notch at `ω_anti`. **Right:** a rest-to-rest bang-bang move drives the load to a new angle; the unshaped command leaves the load ringing on the resonance, while the ZV-shaped command arrives at the **same** final angle with the residual vibration cut by ~99 %.
+
 ### Sensor emulation
 
 The bench also models realistic sensor behaviour (quantization, noise, bias, saturation):

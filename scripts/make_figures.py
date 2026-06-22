@@ -6,11 +6,12 @@ are no hand-authored data arrays. Run headless:
 
     .venv/bin/python scripts/make_figures.py
 
-Outputs four PNGs into ``assets/``:
-    motor_step_response.png   second-order step (velocity + winding current)
-    friction_curve.png        Coulomb + Stribeck + viscous S-curve
-    cascade_step.png          closed-loop position step, anti-windup vs windup
-    system_id.png             least-squares parameter recovery vs ground truth
+Outputs five PNGs into ``assets/``:
+    motor_step_response.png      second-order step (velocity + winding current)
+    friction_curve.png           Coulomb + Stribeck + viscous S-curve
+    cascade_step.png             closed-loop position step, anti-windup vs windup
+    system_id.png                least-squares parameter recovery vs ground truth
+    resonance_suppression.png    two-mass FRF + ZV input-shaping of a load move
 """
 
 from __future__ import annotations
@@ -49,6 +50,14 @@ from robot_testbench.analysis.system_id import (
     generate_chirp_voltage,
     collect_excitation_data,
     identify_motor_parameters,
+)
+from robot_testbench.resonance import (
+    FlexibleJointParameters,
+    resonance_modes,
+    compliance_ratio,
+    simulate_load_response,
+    apply_input_shaper,
+    residual_vibration,
 )
 
 ASSETS = os.path.join(_REPO_ROOT, "assets")
@@ -260,12 +269,96 @@ def fig_system_id() -> None:
     _save(fig, "system_id.png")
 
 
+# ---------------------------------------------------------------------------
+# 5. Flexible-joint resonance: FRF peak + anti-resonance, and input shaping.
+# ---------------------------------------------------------------------------
+def fig_resonance_suppression() -> None:
+    # Two-mass plant: a compliant shaft couples a 0.05 motor inertia to a 0.02
+    # load through a 400 N.m/rad spring with light structural damping.
+    p = FlexibleJointParameters(
+        motor_inertia=0.05, load_inertia=0.02, stiffness=400.0, damping=0.05,
+    )
+    m = resonance_modes(p)
+
+    # --- Left panel: dynamic-compliance FRF (normalised by the rigid baseline).
+    omega = np.linspace(1.0, 2.6 * m.omega_res, 60000)
+    load_mag = compliance_ratio(p, omega, output="load")    # resonance peak
+    motor_mag = compliance_ratio(p, omega, output="motor")  # anti-resonance dip
+
+    # --- Right panel: rest-to-rest move, unshaped (ringing) vs ZV-shaped (clean).
+    dt = 1e-4
+    T = 1.2
+    n = int(T / dt)
+    t = np.arange(n) * dt
+    cmd = np.zeros(n)
+    ta = int(0.05 / dt)
+    cmd[:ta] = 1.0
+    cmd[ta : 2 * ta] = -1.0  # net-zero torque impulse -> ends at rest at new angle
+
+    _, theta_l_u = simulate_load_response(p, cmd, dt)
+    shaped = apply_input_shaper(cmd, dt, m.omega_res, m.zeta, kind="ZV")
+    _, theta_l_s = simulate_load_response(p, shaped, dt)
+
+    rv_u = residual_vibration(theta_l_u, 0.4)
+    rv_s = residual_vibration(theta_l_s, 0.4)
+    reduction = 100.0 * (1.0 - rv_s / rv_u)
+
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(12.8, 4.6))
+    fig.subplots_adjust(wspace=0.26)
+
+    # Left: FRF, log-y to show the sharp peak and deep notch together.
+    axL.semilogy(omega, load_mag, color=PALETTE[0],
+                 label="Load FRF $\\tau\\!\\to\\!\\theta_l$ (resonance)")
+    axL.semilogy(omega, motor_mag, color=PALETTE[2],
+                 label="Motor FRF $\\tau\\!\\to\\!\\theta_m$ (anti-resonance)")
+    axL.axvline(m.omega_res, color=PALETTE[1], ls="--", lw=1.3, alpha=0.8)
+    axL.axvline(m.omega_antires, color=PALETTE[4], ls=":", lw=1.3, alpha=0.8)
+    axL.annotate(f"$\\omega_{{res}}$ = {m.omega_res:.0f} rad/s",
+                 xy=(m.omega_res, load_mag.max()),
+                 xytext=(m.omega_res * 1.25, load_mag.max() * 0.28),
+                 color=PALETTE[1], fontsize=10,
+                 arrowprops=dict(arrowstyle="->", color=PALETTE[1], lw=1.2))
+    dip_idx = np.argmin(motor_mag[(omega > 0.6 * m.omega_antires)
+                                  & (omega < 1.4 * m.omega_antires)])
+    axL.annotate(f"$\\omega_{{anti}}$ = {m.omega_antires:.0f} rad/s",
+                 xy=(m.omega_antires, motor_mag[(omega > 0.6 * m.omega_antires)
+                     & (omega < 1.4 * m.omega_antires)][dip_idx]),
+                 xytext=(m.omega_antires * 0.30, 0.18),
+                 color=PALETTE[4], fontsize=10,
+                 arrowprops=dict(arrowstyle="->", color=PALETTE[4], lw=1.2))
+    axL.set_xlabel("Frequency $\\omega$ [rad/s]")
+    axL.set_ylabel("Compliance amplification $|H|/|H_{rigid}|$")
+    axL.set_title("Two-mass FRF: peak + anti-resonance")
+    axL.set_xlim(omega[0], omega[-1])
+    axL.legend(loc="upper right", fontsize=9)
+
+    # Right: load step response, unshaped vs input-shaped.
+    final = theta_l_u[int(0.8 * n):].mean()
+    axR.axhline(final, color="#475569", ls="--", lw=1.2,
+                label=f"Target = {final:.3f} rad")
+    axR.plot(t, theta_l_u, color=PALETTE[1],
+             label=f"Unshaped (residual {rv_u*1e3:.2f} mrad)")
+    axR.plot(t, theta_l_s, color=PALETTE[0],
+             label=f"ZV input-shaped (residual {rv_s*1e3:.3f} mrad)")
+    axR.set_xlabel("Time [s]")
+    axR.set_ylabel("Load angle $\\theta_l$ [rad]")
+    axR.set_title("Load move: input shaping kills the ringing")
+    axR.set_xlim(0, t[-1])
+    axR.annotate(f"residual vibration\n$-${reduction:.1f}%",
+                 xy=(0.62, 0.30), xycoords="axes fraction",
+                 ha="center", fontsize=11, color=PALETTE[2], fontweight="bold")
+    axR.legend(loc="lower right")
+
+    _save(fig, "resonance_suppression.png")
+
+
 def main() -> None:
     print("Generating README figures from the real robot_testbench API:")
     fig_motor_step()
     fig_friction_curve()
     fig_cascade_step()
     fig_system_id()
+    fig_resonance_suppression()
     print("Done.")
 
 
