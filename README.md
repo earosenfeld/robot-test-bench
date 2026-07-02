@@ -96,14 +96,14 @@ Solid arrows are the forward command path; dotted arrows are feedforward injecti
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/robot_testbench.git
-cd robot_testbench
+git clone https://github.com/earosenfeld/robot-test-bench.git
+cd robot-test-bench
 
 # Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
 # or
-venv\Scripts\activate     # Windows
+.venv\Scripts\activate     # Windows
 
 # Install the package in development mode
 pip install -e .
