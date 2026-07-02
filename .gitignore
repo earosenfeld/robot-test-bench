@@ -240,4 +240,4 @@ cython_debug/
 .cursorindexingignore
 
 # Build artifacts
-robot_testbench.egg-info/
+robot_testbench.egg-info/sensor_visualization.png

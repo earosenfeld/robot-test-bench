@@ -1,5 +1,7 @@
 # Robot Test Bench
 
+[![CI](https://github.com/earosenfeld/robot-test-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/earosenfeld/robot-test-bench/actions/workflows/ci.yml)
+
 A comprehensive testing framework for robotic systems, providing tools for motor control simulation, sensor emulation, data acquisition, and real-time visualization.
 
 ## Visualizations
