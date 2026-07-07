@@ -56,6 +56,13 @@ The plant has two characteristic frequencies, recovered in closed form by `reson
 - **ZV** (Zero-Vibration), two impulses: `A1 = 1/(1+K)` at `t=0`, `A2 = K/(1+K)` at `t = T_d/2`, where `K = exp(−ζπ/√(1−ζ²))`, `T_d = 2π/ω_d`, `ω_d = ω_res·√(1−ζ²)`.
 - **ZVD** (Zero-Vibration-and-Derivative), three impulses at `0, T_d/2, T_d` with weights `[1, 2K, K²]/(1+2K+K²)` — far more robust to a mis-estimated resonance.
 
+![Animated comparison: unshaped command leaves the load axis ringing on the resonance, ZV-shaped command settles cleanly](assets/input_shaping_demo.gif)
+
+*Same rest-to-rest move, animated (`scripts/make_hero_gif.py`): the unshaped
+bang-bang excites the mode and the axis rings indefinitely at the lightly damped
+resonance; the ZV-shaped command arrives at the same angle with ~99.8% of the
+residual vibration removed.*
+
 ![Left: two-mass frequency response showing the resonance peak in the load transfer function and the anti-resonance notch in the collocated motor transfer function. Right: a rest-to-rest load move, unshaped (persistent ringing) versus ZV input-shaped (settles cleanly to the same target), with the residual vibration reduced by ~99 %.](assets/resonance_suppression.png)
 
 **Left:** the dynamic-compliance FRF (normalised by the rigid-body `1/s²` baseline) — the load response (blue) peaks at `ω_res`, while the collocated motor response (green) drops into a deep anti-resonance notch at `ω_anti`. **Right:** a rest-to-rest bang-bang move drives the load to a new angle; the unshaped command leaves the load ringing on the resonance, while the ZV-shaped command arrives at the **same** final angle with the residual vibration cut by ~99 %.
