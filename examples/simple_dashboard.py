@@ -6,10 +6,10 @@ import dash
 from dash import dcc, html
 import plotly.graph_objects as go
 import numpy as np
-from simulation.motor import MotorParameters, MotorSimulator
-from simulation.sensors import (
+from robot_testbench.motor import MotorParameters, MotorSimulator
+from robot_testbench.sensors import (
     ForceTorqueSensor, ForceTorqueSensorConfig,
-    QuadratureEncoder, QuadratureEncoderConfig,
+    EncoderSimulator, EncoderConfig,
     JointAngleSensor, JointAngleSensorConfig
 )
 
@@ -30,7 +30,7 @@ motor_params = MotorParameters(
 motor = MotorSimulator(motor_params)
 
 ft_sensor = ForceTorqueSensor(ForceTorqueSensorConfig())
-encoder = QuadratureEncoder(QuadratureEncoderConfig())
+encoder = EncoderSimulator(EncoderConfig())
 ja_sensor = JointAngleSensor(JointAngleSensorConfig())
 
 # Generate time points

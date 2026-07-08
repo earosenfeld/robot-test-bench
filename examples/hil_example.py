@@ -4,7 +4,7 @@ performance monitoring and fault injection.
 """
 
 import time
-from simulation.hil import HILInterface, HILConfig, HILMode
+from robot_testbench.hil import HILInterface, HILConfig, HILMode
 
 def main():
     # Create HIL interface

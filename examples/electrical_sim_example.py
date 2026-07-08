@@ -4,7 +4,7 @@ I2C communication, and fault injection.
 """
 
 import time
-from simulation.electrical import (
+from robot_testbench.motor.electrical import (
     PowerSupply, PowerSupplyConfig,
     I2CInterface, I2CConfig,
     FaultInjector, FaultConfig

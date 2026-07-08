@@ -3,12 +3,12 @@ Example usage of the DAQSimulator.
 """
 
 import time
-from simulation.sensors import QuadratureEncoder, QuadratureEncoderConfig, ForceTorqueSensor, ForceTorqueSensorConfig, DAQSimulator
+from robot_testbench.sensors import EncoderSimulator, EncoderConfig, ForceTorqueSensor, ForceTorqueSensorConfig, DAQSimulator
 
 def main():
     # Create sensor instances
-    encoder_config = QuadratureEncoderConfig(counts_per_rev=1000)
-    encoder = QuadratureEncoder(encoder_config)
+    encoder_config = EncoderConfig(counts_per_rev=1000)
+    encoder = EncoderSimulator(encoder_config)
     torque_config = ForceTorqueSensorConfig(sensitivity=1.0, noise_std=0.05)
     torque_sensor = ForceTorqueSensor(torque_config)
 

@@ -1,6 +1,6 @@
 {
   "test_name": "test_001",
-  "timestamp": "2025-06-19T13:51:10.379873",
+  "timestamp": "2026-07-08T13:41:30.387693",
   "motor_params": {
     "inertia": 0.05,
     "damping": 1.0,
@@ -9,13 +9,17 @@
     "max_speed": 20.0,
     "resistance": 1.0,
     "inductance": 0.1,
+    "back_emf_constant": null,
     "thermal_mass": 0.1,
     "thermal_resistance": 0.5,
     "gear_ratio": 1.0,
     "gear_efficiency": 1.0,
     "ambient_temp": 25.0,
     "max_temp": 100.0,
-    "temp_coeff": 0.0039
+    "temp_coeff": 0.0039,
+    "coulomb_torque": 0.0,
+    "static_torque": 0.0,
+    "stribeck_velocity": 0.05
   },
   "pid_gains": {
     "kp": 5.0,

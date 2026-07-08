@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from robot_testbench.sensors import (
-    QuadratureEncoder, QuadratureEncoderConfig,
+    EncoderSimulator, EncoderConfig,
     ForceTorqueSensor, ForceTorqueSensorConfig,
     JointAngleSensor, JointAngleSensorConfig
 )
@@ -9,13 +9,12 @@ from robot_testbench.sensors import (
 def demo_quadrature_encoder():
     """Demonstrate quadrature encoder behavior."""
     # Create encoder with realistic parameters
-    config = QuadratureEncoderConfig(
-        resolution=1000,  # 1000 counts per revolution
-        noise_std=0.5,    # Add some noise
-        edge_trigger_noise=0.0001,  # 100 μs timing noise
-        max_frequency=1000.0  # 1 kHz max frequency
+    config = EncoderConfig(
+        counts_per_rev=1000,        # 1000 counts per revolution
+        edge_trigger_noise=0.0001,  # 100 us timing noise
+        max_frequency=1000.0        # 1 kHz max frequency
     )
-    encoder = QuadratureEncoder(config)
+    encoder = EncoderSimulator(config)
     
     # Generate test trajectory
     t = np.linspace(0, 2, 1000)
@@ -60,7 +59,7 @@ def demo_force_torque_sensor():
         noise_std=0.1,    # 100 mV noise
         drift_rate=0.01,  # 10 mV/s drift
         hysteresis=0.1,   # 100 mN⋅m hysteresis
-        temperature_coefficient=0.001  # 1 mV/°C
+        temp_coeff=0.001  # 1 mV/°C
     )
     sensor = ForceTorqueSensor(config)
     
@@ -100,8 +99,9 @@ def demo_joint_angle_sensor():
         resolution=0.001,  # 1 mrad resolution
         noise_std=0.0005,  # 0.5 mrad noise
         backlash=0.01,     # 10 mrad backlash
-        limit_stops=(-np.pi, np.pi),
-        temperature_coefficient=0.0001  # 0.1 mrad/°C
+        limit_pos=np.pi,
+        limit_neg=-np.pi,
+        temp_coeff=0.0001  # 0.1 mrad/°C
     )
     sensor = JointAngleSensor(config)
     

@@ -192,17 +192,23 @@ python examples/electrical_sim_example.py
 ## Project Structure
 
 ```
-RobotTestBench/
-├── robot_testbench/          # Main package
-│   ├── motor/               # Motor simulation
-│   ├── sensors/             # Sensor emulation
-│   ├── control/             # Control systems
-│   ├── dashboard/           # Visualization
+robot-test-bench/
+├── robot_testbench/         # Main package
+│   ├── motor/               # Plant models: RK4 motor sim, electrical, friction, gearbox, dyno
+│   ├── control/             # Three-loop cascade (position/velocity/current) with anti-windup
+│   ├── resonance.py         # Two-mass flexible joint, FRF, input shaping (ZV/ZVD)
+│   ├── analysis/            # System identification (least-squares parameter recovery)
+│   ├── sensors/             # Encoder, force/torque, joint-angle sensor emulation
+│   ├── daq/                 # Data logging and protocol simulation
+│   ├── hil/                 # Hardware-in-the-loop interface scaffolding
+│   ├── analytics/ compliance/ config/  # Reporting, limits, configuration
+│   ├── dashboard/           # Dash test dashboard
 │   └── visualization/       # Plot utilities
-├── examples/                # Example scripts
-├── tests/                   # Test suite
-├── data/logs/               # Test data storage
-└── reports/                 # Test results
+├── examples/                # Runnable example scripts
+├── scripts/                 # make_figures.py / make_hero_gif.py (README media)
+├── tests/                   # Unit + integration test suite (pytest)
+├── data/logs/               # Sample test data for the dashboard
+└── assets/                  # Generated README figures
 ```
 
 ## Common Commands
