@@ -1,6 +1,6 @@
 {
   "test_name": "sample_test",
-  "timestamp": "2025-06-19T11:23:18.272865",
+  "timestamp": "2025-06-19T14:04:51.553901",
   "motor_params": {
     "inertia": 0.05,
     "damping": 0.1,
